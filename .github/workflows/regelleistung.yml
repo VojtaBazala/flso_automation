@@ -30,9 +30,21 @@ on:
     - cron: '01 9 * * 1-5'
     - cron: '06 9 * * 1-5'
     - cron: '11 9 * * 1-5'
-    # Pokračování retry FCR a aFRR každých 30 minut do 23:00
+    # mFRR +/- – první pokus v 10:16 SEČ (9:16 UTC)
     - cron: '16 9 * * 1-5'
+    # mFRR retry každých 5 minut do 11:16
+    - cron: '21 9 * * 1-5'
+    - cron: '26 9 * * 1-5'
+    - cron: '31 9 * * 1-5'
+    - cron: '36 9 * * 1-5'
+    - cron: '41 9 * * 1-5'
     - cron: '46 9 * * 1-5'
+    - cron: '51 9 * * 1-5'
+    - cron: '56 9 * * 1-5'
+    - cron: '01 10 * * 1-5'
+    - cron: '06 10 * * 1-5'
+    - cron: '11 10 * * 1-5'
+    # Pokračování retry všech každých 30 minut do 23:00
     - cron: '16 10 * * 1-5'
     - cron: '46 10 * * 1-5'
     - cron: '16 11 * * 1-5'
@@ -151,3 +163,103 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           FIRST_RUN: ${{ github.event.schedule == '16 8 * * 1-5' && 'true' || 'false' }}
         run: python afrr_download.py
+
+  mfrr_plus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
+
+      - name: Check if mFRR+ already downloaded today
+        id: check_mfrr_plus
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python3 -c "
+          import os
+          from datetime import datetime, timedelta
+          from sqlalchemy import create_engine, text
+          db = os.environ['DATABASE_URL'].replace('postgres://', 'postgresql://', 1)
+          engine = create_engine(db)
+          delivery = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+          try:
+              with engine.connect() as conn:
+                  result = conn.execute(text('SELECT COUNT(*) FROM mfrr_orderbook WHERE trade_date = :d'), {'d': delivery})
+                  count = result.scalar()
+              print(f'mFRR+ rows for {delivery}: {count}')
+              if count > 0:
+                  with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                      f.write('mfrr_plus_done=true\n')
+              else:
+                  with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                      f.write('mfrr_plus_done=false\n')
+          except Exception:
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('mfrr_plus_done=false\n')
+          " || echo "mfrr_plus_done=false" >> $GITHUB_OUTPUT
+
+      - name: Run mFRR+ download
+        if: steps.check_mfrr_plus.outputs.mfrr_plus_done != 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ENTSOE_API_TOKEN: ${{ secrets.ENTSOE_API_TOKEN }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          FIRST_RUN: ${{ github.event.schedule == '16 9 * * 1-5' && 'true' || 'false' }}
+        run: python mfrr_plus_download.py
+
+  mfrr_minus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
+
+      - name: Check if mFRR- already downloaded today
+        id: check_mfrr_minus
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python3 -c "
+          import os
+          from datetime import datetime, timedelta
+          from sqlalchemy import create_engine, text
+          db = os.environ['DATABASE_URL'].replace('postgres://', 'postgresql://', 1)
+          engine = create_engine(db)
+          delivery = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+          try:
+              with engine.connect() as conn:
+                  result = conn.execute(text('SELECT COUNT(*) FROM mfrr_minus_orderbook WHERE trade_date = :d'), {'d': delivery})
+                  count = result.scalar()
+              print(f'mFRR- rows for {delivery}: {count}')
+              if count > 0:
+                  with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                      f.write('mfrr_minus_done=true\n')
+              else:
+                  with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                      f.write('mfrr_minus_done=false\n')
+          except Exception:
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('mfrr_minus_done=false\n')
+          " || echo "mfrr_minus_done=false" >> $GITHUB_OUTPUT
+
+      - name: Run mFRR- download
+        if: steps.check_mfrr_minus.outputs.mfrr_minus_done != 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ENTSOE_API_TOKEN: ${{ secrets.ENTSOE_API_TOKEN }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          FIRST_RUN: ${{ github.event.schedule == '16 9 * * 1-5' && 'true' || 'false' }}
+        run: python mfrr_minus_download.py
