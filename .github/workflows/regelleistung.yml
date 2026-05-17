@@ -1,0 +1,27 @@
+name: Regelleistung Download
+
+on:
+  schedule:
+    - cron: '30 8 * * 1-5'  # Po-Pá v 9:30 SEČ (8:30 UTC)
+  workflow_dispatch:          # možnost spustit ručně tlačítkem
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
+
+      - name: Run download
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python regelleistung_download.py
