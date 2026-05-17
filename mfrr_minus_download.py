@@ -16,13 +16,14 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine, text
+from config import EMAIL_RECIPIENTS
 
 # ── KONFIGURACE ────────────────────────────────────
 DB_URL          = os.environ.get("DATABASE_URL", "")
 API_TOKEN       = os.environ.get("ENTSOE_API_TOKEN", "")
 GMAIL_USER      = "oldrich.bazala@gmail.com"
 GMAIL_PASSWORD  = os.environ.get("GMAIL_APP_PASSWORD", "")
-EMAIL_TO        = "oldrich@bhfund.eu"
+EMAIL_TO        = ", ".join(EMAIL_RECIPIENTS)
 FIRST_RUN       = os.environ.get("FIRST_RUN", "true").lower() == "true"
 
 BASE_URL        = "https://web-api.tp.entsoe.eu/api"
