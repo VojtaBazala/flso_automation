@@ -15,12 +15,13 @@ from email.mime.base import MIMEBase
 from email import encoders
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, text
+from config import EMAIL_RECIPIENTS
 
 # ── KONFIGURACE ────────────────────────────────────
 DB_URL         = os.environ.get("DATABASE_URL", "")
 GMAIL_USER     = "oldrich.bazala@gmail.com"
 GMAIL_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
-EMAIL_TO       = "oldrich@bhfund.eu"
+EMAIL_TO       = ", ".join(EMAIL_RECIPIENTS)
 FIRST_RUN      = os.environ.get("FIRST_RUN", "true").lower() == "true"
 
 if not DB_URL:
