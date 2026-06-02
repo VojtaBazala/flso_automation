@@ -96,7 +96,7 @@ jobs:
       - name: Check if FCR already downloaded today
         id: check_fcr
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
           python3 -c "
           import os
@@ -121,7 +121,7 @@ jobs:
       - name: Run FCR download
         if: steps.check_fcr.outputs.fcr_done != 'true'
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           FIRST_RUN: ${{ github.event.schedule == '16 7 * * 1-5' && 'true' || 'false' }}
         run: python fcr_download.py
@@ -149,7 +149,7 @@ jobs:
       - name: Check if aFRR already downloaded today
         id: check_afrr
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
           python3 -c "
           import os
@@ -173,7 +173,7 @@ jobs:
       - name: Run aFRR download
         if: steps.check_afrr.outputs.afrr_done != 'true'
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           FIRST_RUN: ${{ github.event.schedule == '16 8 * * 1-5' && 'true' || 'false' }}
         run: python afrr_download.py
@@ -201,7 +201,7 @@ jobs:
       - name: Check if mFRR+ already downloaded today
         id: check_mfrr_plus
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
           python3 -c "
           import os
@@ -229,7 +229,7 @@ jobs:
       - name: Run mFRR+ download
         if: steps.check_mfrr_plus.outputs.mfrr_plus_done != 'true'
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
           ENTSOE_API_TOKEN: ${{ secrets.ENTSOE_API_TOKEN }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           FIRST_RUN: ${{ github.event.schedule == '16 9 * * 1-5' && 'true' || 'false' }}
@@ -258,7 +258,7 @@ jobs:
       - name: Check if mFRR- already downloaded today
         id: check_mfrr_minus
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
           python3 -c "
           import os
@@ -286,7 +286,7 @@ jobs:
       - name: Run mFRR- download
         if: steps.check_mfrr_minus.outputs.mfrr_minus_done != 'true'
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
           ENTSOE_API_TOKEN: ${{ secrets.ENTSOE_API_TOKEN }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           FIRST_RUN: ${{ github.event.schedule == '16 9 * * 1-5' && 'true' || 'false' }}
