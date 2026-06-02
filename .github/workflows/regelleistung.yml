@@ -83,6 +83,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Fetch DATABASE_URL from Heroku
+        env:
+          HEROKU_API_TOKEN: ${{ secrets.HEROKU_API_TOKEN }}
+        run: |
+          DB_URL=$(curl -s -n -X GET https://api.heroku.com/apps/cepsonline/config-vars             -H "Accept: application/vnd.heroku+json; version=3"             -H "Authorization: Bearer $HEROKU_API_TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)['DATABASE_URL'])")
+          echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
 
@@ -129,6 +136,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Fetch DATABASE_URL from Heroku
+        env:
+          HEROKU_API_TOKEN: ${{ secrets.HEROKU_API_TOKEN }}
+        run: |
+          DB_URL=$(curl -s -n -X GET https://api.heroku.com/apps/cepsonline/config-vars             -H "Accept: application/vnd.heroku+json; version=3"             -H "Authorization: Bearer $HEROKU_API_TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)['DATABASE_URL'])")
+          echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
 
@@ -173,6 +187,13 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
+
+      - name: Fetch DATABASE_URL from Heroku
+        env:
+          HEROKU_API_TOKEN: ${{ secrets.HEROKU_API_TOKEN }}
+        run: |
+          DB_URL=$(curl -s -n -X GET https://api.heroku.com/apps/cepsonline/config-vars             -H "Accept: application/vnd.heroku+json; version=3"             -H "Authorization: Bearer $HEROKU_API_TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)['DATABASE_URL'])")
+          echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
@@ -223,6 +244,13 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
+
+      - name: Fetch DATABASE_URL from Heroku
+        env:
+          HEROKU_API_TOKEN: ${{ secrets.HEROKU_API_TOKEN }}
+        run: |
+          DB_URL=$(curl -s -n -X GET https://api.heroku.com/apps/cepsonline/config-vars             -H "Accept: application/vnd.heroku+json; version=3"             -H "Authorization: Bearer $HEROKU_API_TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)['DATABASE_URL'])")
+          echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
