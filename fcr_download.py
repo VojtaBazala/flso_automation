@@ -27,7 +27,12 @@ if not DB_URL:
 if not GMAIL_PASSWORD:
     raise ValueError("GMAIL_APP_PASSWORD není nastavena!")
 
-engine = create_engine(DB_URL.replace("postgres://", "postgresql://", 1))
+engine = create_engine(
+    DB_URL.replace("postgres://", "postgresql://", 1),
+    connect_args={"connect_timeout": 10},
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 
 def log_email_sent(eng, run_date, step):
     try:
@@ -133,16 +138,6 @@ if already_in_db:
         if already_tracked and already_tracked >= 6:
             print("FCR tracking již kompletní, přeskakuji")
             sys.exit(0)
-        # Zkontroluj jestli email byl už odeslán
-        try:
-            email_sent = conn.execute(text(
-                "SELECT COUNT(*) FROM pipeline_log WHERE run_date=:d AND step='fcr_email' AND email_sent=TRUE"
-            ), {"d": delivery_date}).scalar()
-            if email_sent and email_sent > 0:
-                print("FCR email již odeslán dnes, přeskakuji")
-                sys.exit(0)
-        except Exception:
-            pass
         with fresh.connect() as _c:
             rows = _c.execute(text("SELECT product_name, cz_price FROM fcr_overview WHERE trade_date = :d"), {"d": delivery_date}).fetchall()
         for row in rows:
@@ -199,6 +194,25 @@ if not data_ok:
     sys.exit(0)
 
 # Uložení do DB
+import time
+for _retry in range(3):
+    try:
+        engine2 = create_engine(
+            DB_URL.replace("postgres://", "postgresql://", 1),
+            connect_args={"connect_timeout": 10},
+            pool_pre_ping=True,
+        )
+        engine2.connect().close()
+        engine = engine2
+        break
+    except Exception as _re:
+        print(f"DB connection pokus {_retry+1}/3 selhal: {_re}")
+        if _retry < 2:
+            time.sleep(10)
+        else:
+            print("DB nedostupná po 3 pokusech, konec")
+            sys.exit(0)
+
 with engine.connect() as conn:
     conn.execute(text("""
         CREATE TABLE IF NOT EXISTS fcr_overview (
