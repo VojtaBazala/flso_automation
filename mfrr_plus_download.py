@@ -61,6 +61,28 @@ def send_email(subject, body):
         server.sendmail(GMAIL_USER, EMAIL_TO, msg.as_string())
     print(f"Email odeslán: {subject}")
 
+def log_email_sent(eng, run_date, step):
+    try:
+        from sqlalchemy import text as _lt
+        with eng.connect() as _lc:
+            _lc.execute(_lt("""
+                CREATE TABLE IF NOT EXISTS pipeline_log (
+                    id SERIAL PRIMARY KEY, run_date DATE NOT NULL,
+                    step TEXT NOT NULL, email_sent BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(run_date, step)
+                )
+            """))
+            _lc.execute(_lt("""
+                INSERT INTO pipeline_log (run_date, step, email_sent)
+                VALUES (:d, :s, TRUE)
+                ON CONFLICT (run_date, step) DO UPDATE SET email_sent = TRUE
+            """), {"d": str(run_date), "s": step})
+            _lc.commit()
+        print(f"pipeline_log: {step} ✅")
+    except Exception as _le:
+        print(f"⚠ pipeline_log selhal: {_le}")
+
 
 def marginal_price_for_volume(orderbook: pd.DataFrame, volume: float):
     if orderbook.empty:
@@ -188,6 +210,25 @@ if not data_ok:
     sys.exit(0)
 
 # ── ULOŽENÍ DO DB ──────────────────────────────────
+import time
+for _retry in range(3):
+    try:
+        _eng = create_engine(
+            DB_URL.replace("postgres://", "postgresql://", 1),
+            connect_args={"connect_timeout": 10},
+            pool_pre_ping=True,
+        )
+        _eng.connect().close()
+        engine = _eng
+        break
+    except Exception as _re:
+        print(f"DB connection pokus {_retry+1}/3 selhal: {_re}")
+        if _retry < 2:
+            time.sleep(10)
+        else:
+            print("DB nedostupná po 3 pokusech, konec")
+            sys.exit(0)
+
 with engine.connect() as conn:
     conn.execute(text("""
         CREATE TABLE IF NOT EXISTS mfrr_orderbook (
@@ -238,5 +279,6 @@ send_email(
         f"Čas stažení: {datetime.now().strftime('%H:%M:%S')}"
     )
 )
+log_email_sent(engine, delivery_date, "mfrr_plus_email")
 
 print("Hotovo!")
