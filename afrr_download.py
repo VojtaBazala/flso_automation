@@ -109,6 +109,25 @@ if not data_ok:
     sys.exit(0)
 
 # ── ULOŽENÍ DO DB ──────────────────────────────────
+import time
+for _retry in range(3):
+    try:
+        _eng = create_engine(
+            DB_URL.replace("postgres://", "postgresql://", 1),
+            connect_args={"connect_timeout": 10},
+            pool_pre_ping=True,
+        )
+        _eng.connect().close()
+        engine = _eng
+        break
+    except Exception as _re:
+        print(f"DB connection pokus {_retry+1}/3 selhal: {_re}")
+        if _retry < 2:
+            time.sleep(10)
+        else:
+            print("DB nedostupná po 3 pokusech, konec")
+            sys.exit(0)
+
 with engine.connect() as conn:
     conn.execute(text("""
         CREATE TABLE IF NOT EXISTS afrr_overview (
