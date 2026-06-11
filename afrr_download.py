@@ -105,8 +105,8 @@ if not data_ok:
                 f"Čas pokusu: {datetime.now().strftime('%H:%M:%S')}"
             )
         )
-    print("Data nejsou dostupna - konec s exit code 2")
-    sys.exit(2)
+    print("Data nejsou dostupna - cekam na dalsi pokus")
+    sys.exit(0)
 
 # ── ULOŽENÍ DO DB ──────────────────────────────────
 with engine.connect() as conn:
