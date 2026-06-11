@@ -52,6 +52,29 @@ def send_email(subject, body, attachments=None):
     print(f"Email odeslan: {subject}")
 
 
+
+def log_email_sent(eng, run_date, step):
+    try:
+        from sqlalchemy import text as _lt
+        with eng.connect() as _lc:
+            _lc.execute(_lt("""
+                CREATE TABLE IF NOT EXISTS pipeline_log (
+                    id SERIAL PRIMARY KEY, run_date DATE NOT NULL,
+                    step TEXT NOT NULL, email_sent BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(run_date, step)
+                )
+            """))
+            _lc.execute(_lt("""
+                INSERT INTO pipeline_log (run_date, step, email_sent)
+                VALUES (:d, :s, TRUE)
+                ON CONFLICT (run_date, step) DO UPDATE SET email_sent = TRUE
+            """), {"d": str(run_date), "s": step})
+            _lc.commit()
+        print(f"pipeline_log: {step} ✅")
+    except Exception as _le:
+        print(f"⚠ pipeline_log selhal: {_le}")
+
 def df_to_excel_bytes(df):
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
@@ -202,4 +225,5 @@ send_email(
     ]
 )
 
+log_email_sent(engine, delivery_date, "afrr_email")
 print("Hotovo!")
