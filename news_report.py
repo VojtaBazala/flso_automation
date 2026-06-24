@@ -54,46 +54,76 @@ CZ_LOCALE      = ("cs",    "CZ", "CZ:cs")
 # Sekce: (nadpis, [dotazy], locale).  locale = None → DEFAULT_LOCALE.
 # Pozn.: "when:2d" omezí Google News na poslední ~2 dny; tvrdý časový filtr
 #        v kódu to ještě dojistí dle LOOKBACK_HOURS.
+# Geo-brána pro FR/DE: titulek musí zmiňovat zemi nebo konkrétní elektrárnu,
+# jinak je to zpráva o jiné zemi (Austrálie/UK/Belgie…), co dotaz vytáhl omylem.
+GEO_FR = [
+    "france", "french", "edf", "rte ", "golfech", "blayais", "bugey",
+    "tricastin", "saint-alban", "cattenom", "chooz", "gravelines", "penly",
+    "flamanville", "paluel", "civaux", "chinon", "dampierre", "cruas",
+    "nogent", "belleville", "fessenheim",
+]
+GEO_DE = [
+    "germany", "german", "deutschland", "eex", "regelleistung", "amprion",
+    "tennet", "50hertz", "transnetbw", "bundesnetzagentur", "leipzig",
+]
+
 SECTIONS = [
     ("🇫🇷 Francie — jádro & trh", [
         "EDF nuclear France output when:2d",
         "France nuclear river temperature heatwave when:2d",
         "France electricity price power market when:2d",
         "RTE France power grid when:2d",
-    ], None),
+    ], None, GEO_FR),
     ("🇩🇪 Německo — trh & OZE", [
         "Germany electricity price power market when:2d",
         "Germany power EEX EPEX when:2d",
         "Germany wind solar renewables power grid when:2d",
         "regelleistung balancing power Germany when:2d",
-    ], None),
+    ], None, GEO_DE),
     ("🇨🇿 Česko — trh & jádro", [
         "ČEPS elektřina přenosová soustava when:2d",
         "OTE cena elektřiny trh when:2d",
         "ČEZ jaderná elektrárna Temelín Dukovany when:2d",
         "Česko energetika elektřina ceny when:2d",
         "podpůrné služby aFRR mFRR baterie when:2d",
-    ], CZ_LOCALE),
+    ], CZ_LOCALE, None),
     ("🌍 Evropský trh / ceny / rezervy", [
         "European power prices EPEX spot when:2d",
         "aFRR mFRR balancing capacity price Europe when:2d",
-    ], None),
+    ], None, None),
 ]
 
-# Lehký whitelist klíčových slov – zahodí očividně nesouvisející titulky.
-# (Necháš-li prázdné, filtr se nepoužije.) Obsahuje EN i CZ kmeny.
+# Lehký whitelist klíčových slov – titulek musí obsahovat aspoň jedno
+# (energetická relevance). Obsahuje EN i CZ kmeny.
+# Pozn.: "heatwave/drought/river" schválně NEJSOU – pouštěly katastrofické
+#        titulky ("40 drown in France as heatwave peaks").
 KEYWORDS = [
-    # EN
-    "nuclear", "edf", "reactor", "river", "heatwave", "drought",
-    "power", "electricity", "grid", "price", "prices", "market",
-    "epex", "eex", "spot", "wind", "solar", "renewab", "gas",
-    "afrr", "mfrr", "fcr", "balancing", "reserve", "regelleistung",
-    "rte", "entso", "outage", "curtail", "capacity", "energy",
+    # EN — široká energetická relevance (bez heatwave/drought/river,
+    #      které pouštěly katastrofické titulky)
+    "nuclear", "edf", "reactor", "power", "electricity", "grid", "price",
+    "prices", "market", "epex", "eex", "spot", "wind", "solar", "renewab",
+    "gas", "afrr", "mfrr", "fcr", "balancing", "reserve", "regelleistung",
+    "rte", "entso", "outage", "curtail", "capacity", "megawatt", "mwh",
+    "gwh", "energy", "utility", "tariff",
     # CZ
-    "elektř", "energ", "jadern", "čez", "čeps", "ote", "baterie",
-    "plyn", "obnoviteln", "fotovolt", "výrob", "přenosov", "distribuc",
-    "rezerv", "regulačn", "podpůrn", "teplárn", "cen", "soustav",
-    "temelín", "dukovan", "vítr", "větrn", "solárn",
+    "elektř", "energetik", "jadern", "čez", "čeps", "ote", "baterie",
+    "plyn", "obnoviteln", "fotovolt", "přenosov", "rozvodn", "rezerv",
+    "regulačn", "podpůrn", "teplárn", "soustav", "temelín", "dukovan",
+    "větrn", "solárn", "megawatt",
+]
+
+# Blocklist zdrojů – pseudo-výzkumný / SEO spam, ne zprávy.
+BLOCK_SOURCES = [
+    "indexbox", "pulse 2.0", "openpr", "globenewswire", "prnewswire",
+    "market.us", "marketresearch", "research and markets",
+]
+
+# Blocklist frází v titulku – podpisy „market research" spamu.
+BLOCK_PATTERNS = [
+    "market growth", "market analysis", "market demand", "market size",
+    "market outlook", "market report", "market share", "market trends",
+    "market forecast", "cagr", "forecast to 20", "outlook to 20",
+    "growth outlook", "market value",
 ]
 
 USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -189,7 +219,8 @@ def get_news():
 
     for section in SECTIONS:
         section_title, queries = section[0], section[1]
-        locale = section[2] if len(section) > 2 else None
+        locale  = section[2] if len(section) > 2 else None
+        require = section[3] if len(section) > 3 else None
         items = []
         seen_local = set()
         for q in queries:
@@ -200,11 +231,22 @@ def get_news():
             for it in _parse_items(raw):
                 title, src_from_title = _clean_title(it["title"])
                 source = it["source"] or src_from_title
-                key = title.lower()[:90]
+                tl = title.lower()
+                sl = source.lower()
+                key = tl[:90]
                 if key in seen_local or key in seen_global:
                     continue
                 if it["dt"] and it["dt"] < cutoff:
                     continue
+                # blocklist spam zdrojů a frází
+                if any(b in sl for b in BLOCK_SOURCES):
+                    continue
+                if any(p in tl for p in BLOCK_PATTERNS):
+                    continue
+                # geo-brána (FR/DE musí zmiňovat zemi/elektrárnu)
+                if require and not any(g in tl for g in require):
+                    continue
+                # energetická relevance
                 if not _keep(title):
                     continue
                 seen_local.add(key)
