@@ -20,6 +20,7 @@ Konfigurace SMTP (env proměnné – stejné, jaké už nejspíš máš v pipeli
 """
 
 import os
+import re
 import ssl
 import json
 import html
@@ -37,7 +38,7 @@ from datetime import datetime, timezone, timedelta
 LOOKBACK_HOURS = 28
 
 # Max počet zpráv na sekci (po dedupu, seřazeno od nejnovější).
-MAX_PER_SECTION = 8
+MAX_PER_SECTION = 6
 
 # Překlad titulků do češtiny (bezklíčový Google Translate endpoint).
 # Když překlad selže, použije se originální titulek (žádný pád).
@@ -211,11 +212,29 @@ def _keep(title: str) -> bool:
     return any(k in t for k in KEYWORDS)
 
 
+STOPWORDS = {
+    "the","a","an","and","or","as","to","of","in","on","for","with","at","by",
+    "is","are","be","over","under","up","down","new","says","amid","after",
+    "se","na","v","a","i","o","do","za","pod","po","že","jen","pro","the",
+}
+
+
+def _sigwords(title: str):
+    """Množina významových slov titulku (bez diakritiky a stopslov).
+    Dvě zprávy o stejné věci sdílí většinu těchto slov."""
+    import unicodedata
+    t = unicodedata.normalize("NFKD", title.lower())
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    return {w for w in re.findall(r"[a-z0-9]+", t)
+            if len(w) > 3 and w not in STOPWORDS}
+
+
 def get_news():
     """Stáhne a setřídí zprávy. Vrátí list (nadpis_sekce, [zprávy])."""
     cutoff = datetime.now(timezone.utc) - timedelta(hours=LOOKBACK_HOURS)
     result = []
-    seen_global = set()  # dedup napříč sekcemi (titulky se opakují)
+    seen_global = set()   # dedup napříč sekcemi (shodný titulek)
+    seen_topics = []      # měkký dedup stejného tématu (množiny významových slov)
 
     for section in SECTIONS:
         section_title, queries = section[0], section[1]
@@ -249,8 +268,13 @@ def get_news():
                 # energetická relevance
                 if not _keep(title):
                     continue
+                tsig = _sigwords(title)
+                if tsig and any(len(tsig & prev) >= 3 for prev in seen_topics):
+                    continue
                 seen_local.add(key)
                 seen_global.add(key)
+                if tsig:
+                    seen_topics.append(tsig)
                 items.append({
                     "title": title,
                     "title_cs": translate_cs(title),
