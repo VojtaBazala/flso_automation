@@ -1,0 +1,36 @@
+name: Ranní energetické zprávy (FR + DE)
+
+# Samostatná feature v repu: běží v cloudu na GitHub Actions, posílá mail sama.
+# Nemá nic společného s lokálním pipeline (bess_morning apod.).
+
+on:
+  schedule:
+    # GitHub cron je v UTC. Tři běhy denně:
+    - cron: '30 5 * * *'   # 05:30 UTC  (07:30 SELČ)
+    - cron: '0 9 * * *'    # 09:00 UTC  (11:00 SELČ)
+    - cron: '0 16 * * *'   # 16:00 UTC  (18:00 SELČ)
+  workflow_dispatch:   # ruční spuštění tlačítkem (test)
+
+jobs:
+  send-news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # news_report.py používá jen stdlib → žádná instalace závislostí není potřeba.
+
+      - name: Odeslat ranní přehled zpráv
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO:   ${{ secrets.MAIL_TO }}
+        run: python news_report.py
