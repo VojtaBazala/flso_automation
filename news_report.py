@@ -361,7 +361,7 @@ def send_email(html_body: str):
     if not (host and user and pwd and mail_to):
         raise RuntimeError("Chybí SMTP konfigurace (SMTP_HOST/SMTP_USER/SMTP_PASS/MAIL_TO).")
 
-    subject = "⚡ Energetické zprávy — FR & DE — " + datetime.now().strftime("%d.%m.%Y")
+    subject = "⚡ Energetické zprávy — FR & DE & CZ — " + datetime.now().strftime("%d.%m.%Y")
     msg = MIMEText(html_body, "html", "utf-8")
     msg["Subject"] = subject
     msg["From"] = formataddr(("FLSO News", mail_from))
