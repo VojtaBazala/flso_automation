@@ -1,1 +1,28 @@
+name: Keepalive
 
+# Udrží repo aktivní, aby GitHub nevypnul scheduled workflow po 60 dnech
+# neaktivity (regelleistung.yml + news_report.yml). Běží každé pondělí,
+# commitne timestamp do souboru .keepalive -> reset 60denního počítadla.
+
+on:
+  schedule:
+    - cron: '17 4 * * 1'   # každé pondělí 04:17 UTC
+  workflow_dispatch:        # + ruční tlačítko pro test
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Bump timestamp a commit
+        run: |
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .keepalive
+          git config user.name  "keepalive-bot"
+          git config user.email "actions@github.com"
+          git add .keepalive
+          git commit -m "keepalive: $(date -u +%Y-%m-%d)" || echo "nic ke commitu"
+          git push
