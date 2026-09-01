@@ -1,0 +1,15 @@
+name: probe_fms
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests pandas
+      - run: python probe_fms.py
+        env:
+          ENTSOE_TP_USER: ${{ secrets.ENTSOE_TP_USER }}
+          ENTSOE_TP_PASS: ${{ secrets.ENTSOE_TP_PASS }}
