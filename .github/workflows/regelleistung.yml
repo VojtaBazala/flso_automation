@@ -91,7 +91,7 @@ jobs:
           echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
+        run: pip install requests pandas openpyxl "sqlalchemy<2.1" psycopg2-binary
 
       - name: Check if FCR already downloaded today
         id: check_fcr
@@ -144,7 +144,7 @@ jobs:
           echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
+        run: pip install requests pandas openpyxl "sqlalchemy<2.1" psycopg2-binary
 
       - name: Check if aFRR already downloaded today
         id: check_afrr
@@ -196,7 +196,7 @@ jobs:
           echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
+        run: pip install requests pandas openpyxl "sqlalchemy<2.1" psycopg2-binary
 
       - name: Check if mFRR+ already downloaded today
         id: check_mfrr_plus
@@ -253,7 +253,7 @@ jobs:
           echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: pip install requests pandas openpyxl sqlalchemy psycopg2-binary
+        run: pip install requests pandas openpyxl "sqlalchemy<2.1" psycopg2-binary
 
       - name: Check if mFRR- already downloaded today
         id: check_mfrr_minus
