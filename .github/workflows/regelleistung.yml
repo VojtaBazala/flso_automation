@@ -75,8 +75,13 @@ on:
 jobs:
   fcr:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
+
+      - name: Date
+        id: d
+        run: echo "d=$(TZ=Europe/Prague date +%F)" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -131,10 +136,51 @@ jobs:
           FIRST_RUN: ${{ github.event.schedule == '16 7 * * 1-5' && 'true' || 'false' }}
         run: python fcr_download.py
 
+      - name: Alert already sent today?
+        id: alert
+        if: failure()
+        uses: actions/cache/restore@v4
+        with:
+          path: .alert_sent
+          key: alert-${{ github.job }}-${{ steps.d.outputs.d }}
+          lookup-only: true
+
+      - name: Send ONE failure email per day
+        if: failure() && steps.alert.outputs.cache-hit != 'true'
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          JOB: ${{ github.job }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import os, smtplib
+          from email.mime.text import MIMEText
+          from config import EMAIL_RECIPIENTS
+          u = "oldrich.bazala@gmail.com"
+          m = MIMEText(f"Job {os.environ['JOB']} selhal.\nDalsi email az zitra.\nLog: {os.environ['RUN_URL']}", "plain", "utf-8")
+          m["Subject"] = f"CHYBA {os.environ['JOB']} (dnes uz dalsi email neprijde)"
+          m["From"] = u; m["To"] = ", ".join(EMAIL_RECIPIENTS)
+          with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+              s.login(u, os.environ["GMAIL_APP_PASSWORD"]); s.sendmail(u, EMAIL_RECIPIENTS, m.as_string())
+          PY
+          mkdir -p .alert_sent && date > .alert_sent/sent
+
+      - name: Remember alert sent
+        if: failure() && steps.alert.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .alert_sent
+          key: alert-${{ github.job }}-${{ steps.d.outputs.d }}
+
   afrr:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
+
+      - name: Date
+        id: d
+        run: echo "d=$(TZ=Europe/Prague date +%F)" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -188,10 +234,51 @@ jobs:
           FIRST_RUN: ${{ github.event.schedule == '16 8 * * 1-5' && 'true' || 'false' }}
         run: python afrr_download.py
 
+      - name: Alert already sent today?
+        id: alert
+        if: failure()
+        uses: actions/cache/restore@v4
+        with:
+          path: .alert_sent
+          key: alert-${{ github.job }}-${{ steps.d.outputs.d }}
+          lookup-only: true
+
+      - name: Send ONE failure email per day
+        if: failure() && steps.alert.outputs.cache-hit != 'true'
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          JOB: ${{ github.job }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import os, smtplib
+          from email.mime.text import MIMEText
+          from config import EMAIL_RECIPIENTS
+          u = "oldrich.bazala@gmail.com"
+          m = MIMEText(f"Job {os.environ['JOB']} selhal.\nDalsi email az zitra.\nLog: {os.environ['RUN_URL']}", "plain", "utf-8")
+          m["Subject"] = f"CHYBA {os.environ['JOB']} (dnes uz dalsi email neprijde)"
+          m["From"] = u; m["To"] = ", ".join(EMAIL_RECIPIENTS)
+          with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+              s.login(u, os.environ["GMAIL_APP_PASSWORD"]); s.sendmail(u, EMAIL_RECIPIENTS, m.as_string())
+          PY
+          mkdir -p .alert_sent && date > .alert_sent/sent
+
+      - name: Remember alert sent
+        if: failure() && steps.alert.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .alert_sent
+          key: alert-${{ github.job }}-${{ steps.d.outputs.d }}
+
   mfrr_plus:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
+
+      - name: Date
+        id: d
+        run: echo "d=$(TZ=Europe/Prague date +%F)" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -250,10 +337,51 @@ jobs:
           FIRST_RUN: ${{ github.event.schedule == '16 9 * * 1-5' && 'true' || 'false' }}
         run: python mfrr_plus_download.py
 
+      - name: Alert already sent today?
+        id: alert
+        if: failure()
+        uses: actions/cache/restore@v4
+        with:
+          path: .alert_sent
+          key: alert-${{ github.job }}-${{ steps.d.outputs.d }}
+          lookup-only: true
+
+      - name: Send ONE failure email per day
+        if: failure() && steps.alert.outputs.cache-hit != 'true'
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          JOB: ${{ github.job }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import os, smtplib
+          from email.mime.text import MIMEText
+          from config import EMAIL_RECIPIENTS
+          u = "oldrich.bazala@gmail.com"
+          m = MIMEText(f"Job {os.environ['JOB']} selhal.\nDalsi email az zitra.\nLog: {os.environ['RUN_URL']}", "plain", "utf-8")
+          m["Subject"] = f"CHYBA {os.environ['JOB']} (dnes uz dalsi email neprijde)"
+          m["From"] = u; m["To"] = ", ".join(EMAIL_RECIPIENTS)
+          with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+              s.login(u, os.environ["GMAIL_APP_PASSWORD"]); s.sendmail(u, EMAIL_RECIPIENTS, m.as_string())
+          PY
+          mkdir -p .alert_sent && date > .alert_sent/sent
+
+      - name: Remember alert sent
+        if: failure() && steps.alert.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .alert_sent
+          key: alert-${{ github.job }}-${{ steps.d.outputs.d }}
+
   mfrr_minus:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
+
+      - name: Date
+        id: d
+        run: echo "d=$(TZ=Europe/Prague date +%F)" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -311,3 +439,39 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           FIRST_RUN: ${{ github.event.schedule == '16 9 * * 1-5' && 'true' || 'false' }}
         run: python mfrr_minus_download.py
+
+      - name: Alert already sent today?
+        id: alert
+        if: failure()
+        uses: actions/cache/restore@v4
+        with:
+          path: .alert_sent
+          key: alert-${{ github.job }}-${{ steps.d.outputs.d }}
+          lookup-only: true
+
+      - name: Send ONE failure email per day
+        if: failure() && steps.alert.outputs.cache-hit != 'true'
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          JOB: ${{ github.job }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import os, smtplib
+          from email.mime.text import MIMEText
+          from config import EMAIL_RECIPIENTS
+          u = "oldrich.bazala@gmail.com"
+          m = MIMEText(f"Job {os.environ['JOB']} selhal.\nDalsi email az zitra.\nLog: {os.environ['RUN_URL']}", "plain", "utf-8")
+          m["Subject"] = f"CHYBA {os.environ['JOB']} (dnes uz dalsi email neprijde)"
+          m["From"] = u; m["To"] = ", ".join(EMAIL_RECIPIENTS)
+          with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+              s.login(u, os.environ["GMAIL_APP_PASSWORD"]); s.sendmail(u, EMAIL_RECIPIENTS, m.as_string())
+          PY
+          mkdir -p .alert_sent && date > .alert_sent/sent
+
+      - name: Remember alert sent
+        if: failure() && steps.alert.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .alert_sent
+          key: alert-${{ github.job }}-${{ steps.d.outputs.d }}
